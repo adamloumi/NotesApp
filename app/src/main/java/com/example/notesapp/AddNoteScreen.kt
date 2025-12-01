@@ -1,5 +1,6 @@
 package com.example.notesapp
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,11 +21,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.example.notesapp.NoteRepository
+import com.example.notesapp.Note
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddNoteScreen(navController: NavController) {
 
+    val lang = LocalAppLanguage.current
     val context = LocalContext.current
 
     var title by remember { mutableStateOf("") }
@@ -33,15 +38,19 @@ fun AddNoteScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New Note") },
+                title = { Text(Strings.addNote(lang)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = Strings.back(lang)
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = {
 
+                        // Save only if something is written
                         if (title.isNotEmpty() || content.isNotEmpty()) {
                             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
                             val time = formatter.format(Date())
@@ -58,32 +67,35 @@ fun AddNoteScreen(navController: NavController) {
                         }
 
                         navController.popBackStack()
-
                     }) {
-                        Icon(Icons.Default.Check, contentDescription = "Save")
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = Strings.save(lang)
+                        )
                     }
                 }
             )
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
                 .fillMaxSize()
                 .imePadding()
-        )
-        {
+        ) {
 
+            // TITLE FIELD
             TextField(
                 value = title,
                 onValueChange = { title = it },
-                placeholder = { Text("Title") },
+                placeholder = { Text(Strings.title(lang)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
                 singleLine = true,
-                textStyle = MaterialTheme.typography.headlineLarge,  // big title
+                textStyle = MaterialTheme.typography.headlineLarge,
                 colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = MaterialTheme.colorScheme.background,
                     focusedContainerColor = MaterialTheme.colorScheme.background,
@@ -94,13 +106,13 @@ fun AddNoteScreen(navController: NavController) {
                 )
             )
 
-
             Spacer(modifier = Modifier.height(16.dp))
 
+            // CONTENT FIELD
             TextField(
                 value = content,
                 onValueChange = { content = it },
-                placeholder = { Text("Write your note here...") },
+                placeholder = { Text(Strings.addContent(lang)) },
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
@@ -120,3 +132,4 @@ fun AddNoteScreen(navController: NavController) {
         }
     }
 }
+

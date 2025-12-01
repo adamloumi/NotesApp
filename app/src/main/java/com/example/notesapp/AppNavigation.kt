@@ -24,14 +24,28 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.CompositionLocalProvider
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
-    var isDarkTheme by remember { mutableStateOf(false) }
+    var appLanguage by remember { mutableStateOf<String?>(null) }
+
+    // THEME NULL UNTIL LOADED
+    var isDarkTheme by remember { mutableStateOf<Boolean?>(null) }
+
     val scope = rememberCoroutineScope()
+
+    // LOAD SAVED THEME
+    LaunchedEffect(Unit) {
+        LanguageStore.getLanguage(context).collect { lang ->
+            appLanguage = lang
+        }
+    }
 
     LaunchedEffect(Unit) {
         ThemeStore.getTheme(context).collect { savedTheme ->
@@ -39,60 +53,92 @@ fun AppNavigation() {
         }
     }
 
-    MaterialTheme(
-        colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
-    ) {
-        NavHost(
-            navController = navController,
-            startDestination = "notes_list",
+    if (appLanguage == null) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-            enterTransition = {
-                slideInHorizontally(animationSpec = tween(300)) + fadeIn()
-            },
-            exitTransition = {
-                slideOutHorizontally(animationSpec = tween(300)) + fadeOut()
-            }
+                .background(Color.Black)
+        )
+        return
+    }
+
+    // SHOW NOTHING UNTIL THEME IS LOADED (fixes white flash)
+    if (isDarkTheme == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)   // dark splash, no flash
+        )
+        return
+    }
+    CompositionLocalProvider(
+        LocalAppLanguage provides appLanguage!!
+    ) {
+        // ONCE THEME IS READY → SHOW APP
+        MaterialTheme(
+            colorScheme = if (isDarkTheme == true) darkColorScheme() else lightColorScheme()
         ) {
-
-
-
-            composable("notes_list") {
-                NotesApp(navController)
-            }
-
-            composable(
-                route = "edit_note/{noteId}",
-                arguments = listOf(navArgument("noteId") { type = NavType.LongType })
+            NavHost(
+                navController = navController,
+                startDestination = "home",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                enterTransition = {
+                    slideInHorizontally(animationSpec = tween(300)) + fadeIn()
+                },
+                exitTransition = {
+                    slideOutHorizontally(animationSpec = tween(300)) + fadeOut()
+                }
             ) {
-                val noteId = it.arguments?.getLong("noteId") ?: 0L
-                EditNoteScreen(noteId, navController)
-            }
+                composable("home") {
+                    HomeScreen(navController)
+                }
 
-            composable(
-                route = "view_note/{noteId}",
-                arguments = listOf(navArgument("noteId") { type = NavType.LongType })
-            ) {
-                val noteId = it.arguments?.getLong("noteId") ?: 0L
-                ViewNoteScreen(noteId, navController)
-            }
+                composable("tasks") {
+                    TasksScreen(navController)
+                }
 
-            composable("settings") {
-                SettingsScreen(
-                    navController = navController,
-                    isDarkTheme = isDarkTheme,
-                    onThemeToggle = {
-                        val newValue = !isDarkTheme
-                        isDarkTheme = newValue
-                        scope.launch { ThemeStore.saveTheme(context, newValue) }
-                    }
-                )
-            }
+                composable("info") {
+                    InfoScreen(navController)
+                }
 
-            composable("add_note") {
-                AddNoteScreen(navController)
+                composable("notes_list") {
+                    NotesApp(navController)
+                }
+
+                composable(
+                    route = "edit_note/{noteId}",
+                    arguments = listOf(navArgument("noteId") { type = NavType.LongType })
+                ) {
+                    val noteId = it.arguments?.getLong("noteId") ?: 0L
+                    EditNoteScreen(noteId, navController)
+                }
+
+                composable(
+                    route = "view_note/{noteId}",
+                    arguments = listOf(navArgument("noteId") { type = NavType.LongType })
+                ) {
+                    val noteId = it.arguments?.getLong("noteId") ?: 0L
+                    ViewNoteScreen(noteId, navController)
+                }
+
+                composable("settings") {
+                    SettingsScreen(
+                        navController = navController,
+                        isDarkTheme = isDarkTheme ?: false,
+                        onThemeToggle = {
+                            val newValue = !(isDarkTheme ?: false)
+                            isDarkTheme = newValue
+                            scope.launch { ThemeStore.saveTheme(context, newValue) }
+                        }
+                    )
+                }
+
+                composable("add_note") {
+                    AddNoteScreen(navController)
+                }
             }
         }
-
-    }}
+    }
+}

@@ -28,12 +28,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.List
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-          AppNavigation()
+            AppNavigation()
         }
     }
 }
@@ -42,30 +44,32 @@ class MainActivity : ComponentActivity() {
 fun NotesApp(
     navController: NavController,
 ) {
+    val lang = LocalAppLanguage.current
+
+    data class TaskItem(
+        val text: String,
+        val done: Boolean
+    )
+    val tasks: List<TaskItem> = emptyList()
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     var notes by remember { mutableStateOf(listOf<Note>()) }
 
-
     LaunchedEffect(Unit) {
         notes = NoteRepository.loadNotes(context)
     }
 
-
     val sortedNotes = notes.sortedWith(
-        compareByDescending<Note> { it.pinned }   // pinned notes first
-            .thenByDescending { it.timestamp }    // newest after that
+        compareByDescending<Note> { it.pinned }
+            .thenByDescending { it.timestamp }
     )
-
 
     val filteredNotes = sortedNotes.filter { note ->
         note.title.contains(searchQuery, ignoreCase = true) ||
                 note.content.contains(searchQuery, ignoreCase = true)
     }
-
-
 
     var pressed by remember { mutableStateOf(false) }
 
@@ -76,19 +80,7 @@ fun NotesApp(
     )
 
     Scaffold(
-        topBar = {
-            NotesTopBar(
-                navController = navController,
-                isSearching = isSearching,
-                onSearchClick = { isSearching = true },
-                searchQuery = searchQuery,
-                onSearchChange = { searchQuery = it },
-                onCloseSearch = {
-                    searchQuery = ""
-                    isSearching = false
-                }
-            )
-        },
+
 
         floatingActionButton = {
             FloatingActionButton(
@@ -114,7 +106,6 @@ fun NotesApp(
                 .verticalScroll(rememberScrollState())
         ) {
 
-
             for (note in filteredNotes) {
                 NoteCard(note, navController)
             }
@@ -123,13 +114,12 @@ fun NotesApp(
     }
 }
 
-
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesTopBar(
+
     navController: NavController,
+    lang: String,
     isSearching: Boolean,
     onSearchClick: () -> Unit,
     searchQuery: String,
@@ -142,7 +132,7 @@ fun NotesTopBar(
                 TextField(
                     value = searchQuery,
                     onValueChange = onSearchChange,
-                    placeholder = { Text("Search notes...") },
+                    placeholder = { Text(Strings.search(lang)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
@@ -155,12 +145,12 @@ fun NotesTopBar(
                     )
                 )
             } else {
-                Text("BEST Notes App")
+                Text(Strings.appName(lang))
             }
         },
         actions = {
-            if (isSearching) {
 
+            if (isSearching) {
 
                 IconButton(onClick = onCloseSearch) {
                     Icon(
@@ -170,7 +160,14 @@ fun NotesTopBar(
                 }
 
             } else {
-
+                IconButton(onClick = {
+                    navController.navigate("info")
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Info"
+                    )
+                }
 
                 IconButton(onClick = onSearchClick) {
                     Icon(
@@ -178,7 +175,6 @@ fun NotesTopBar(
                         contentDescription = "Search"
                     )
                 }
-
 
                 IconButton(onClick = {
                     navController.navigate("settings")
@@ -188,11 +184,11 @@ fun NotesTopBar(
                         contentDescription = "Settings"
                     )
                 }
+
             }
         }
     )
 }
-
 
 
 @Composable
@@ -225,7 +221,6 @@ fun NoteCard(note: Note, navController: NavController) {
                     style = MaterialTheme.typography.titleLarge
                 )
             }
-
 
             Spacer(modifier = Modifier.height(4.dp))
 

@@ -1,20 +1,17 @@
 package com.example.notesapp
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,13 +43,11 @@ fun EditNoteScreen(noteId: Long, navController: NavController) {
                 },
                 actions = {
                     IconButton(onClick = {
-
                         val updatedNotes = notes.map {
                             if (it.id == noteId)
                                 it.copy(title = title, content = content)
                             else it
                         }
-
                         NoteRepository.saveNotes(context, updatedNotes)
                         navController.popBackStack()
                     }) {
@@ -71,10 +66,10 @@ fun EditNoteScreen(noteId: Long, navController: NavController) {
                 .padding(innerPadding)
                 .imePadding()
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())  // ONLY parent scrolls
                 .padding(16.dp)
         ) {
 
+            // TITLE
             TextField(
                 value = title,
                 onValueChange = { title = it },
@@ -82,7 +77,7 @@ fun EditNoteScreen(noteId: Long, navController: NavController) {
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = 16.dp),
                 textStyle = MaterialTheme.typography.headlineLarge,
                 colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = MaterialTheme.colorScheme.background,
@@ -92,28 +87,23 @@ fun EditNoteScreen(noteId: Long, navController: NavController) {
                 )
             )
 
-            BasicTextField(
+            // CONTENT FIELD (Large Writing Area)
+            TextField(
                 value = content,
                 onValueChange = { content = it },
-                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onBackground
-                ),
+                placeholder = { Text("Edit your note...") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight()
-            ) { inner ->
-                Column {
-                    if (content.isEmpty()) {
-                        Text(
-                            "Edit your note...",
-                            style = MaterialTheme.typography.bodyLarge.copy(color = Color.Gray)
-                        )
-                    }
-                    inner()
-                }
-            }
-
-            Spacer(modifier = Modifier.height(100.dp))  // Enough padding for keyboard
+                    .weight(1f),
+                textStyle = MaterialTheme.typography.bodyLarge,
+                colors = TextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.background,
+                    focusedContainerColor = MaterialTheme.colorScheme.background,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent
+                ),
+                maxLines = Int.MAX_VALUE
+            )
         }
     }
 }

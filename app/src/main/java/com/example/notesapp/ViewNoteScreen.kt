@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,12 +25,8 @@ fun ViewNoteScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
-
-
-    val notes = remember { NoteRepository.loadNotes(context) }
-    var note by remember { mutableStateOf(notes.find { it.id == noteId }!!) }
-
-
+    var notes by remember { mutableStateOf(NoteRepository.loadNotes(context)) }
+    var note by remember { mutableStateOf(notes.find { it.id == noteId }) }
 
     if (note == null) {
         LaunchedEffect(Unit) { navController.popBackStack() }
@@ -39,7 +36,7 @@ fun ViewNoteScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(note.title) },
+                title = { Text(note!!.title) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -49,51 +46,33 @@ fun ViewNoteScreen(
                     }
                 },
                 actions = {
-
+                    IconButton(onClick = {
+                        navController.navigate("edit_note/${note!!.id}")
+                    }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit Note")
+                    }
 
                     IconButton(onClick = {
-                        navController.navigate("edit_note/${note.id}")
+                        val updated = note!!.copy(pinned = !note!!.pinned)
+                        notes = notes.map { if (it.id == noteId) updated else it }
+                        note = updated
+                        NoteRepository.saveNotes(context, notes)
                     }) {
                         Icon(
-                            imageVector = Icons.Filled.Edit,
-                            contentDescription = "Edit Note"
+                            imageVector = if (note!!.pinned) Icons.Filled.Star else Icons.Filled.StarBorder,
+                            contentDescription = "Pin"
                         )
                     }
 
-
                     IconButton(onClick = {
-                        val updatedNotes = notes.map {
-                            if (it.id == noteId) it.copy(pinned = !it.pinned)
-                            else it
-                        }
-
-                        NoteRepository.saveNotes(context, updatedNotes)
-
-                        // Update the local note instantly without leaving the page
-                        note = note.copy(pinned = !note.pinned)
-
+                        deleteNote(note!!.id, context, navController)
                     }) {
-                        Icon(
-                            imageVector = if (note.pinned) Icons.Filled.Star else Icons.Filled.StarBorder,
-                            contentDescription = if (note.pinned) "Unpin" else "Pin"
-                        )
-                    }
-
-
-
-                    IconButton(onClick = {
-                        deleteNote(note.id, context, navController)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = "Delete Note"
-                        )
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete")
                     }
                 }
             )
         }
     ) { innerPadding ->
-
         val scrollState = rememberScrollState()
 
         Column(
@@ -104,29 +83,28 @@ fun ViewNoteScreen(
                 .fillMaxSize()
         ) {
 
-
+            // TIMESTAMP
             Text(
-                text = "Created: ${note.timestamp}",
+                text = "Created: ${note!!.timestamp}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
+
+            // FULL NOTE CONTENT
             SelectionContainer {
                 Text(
-                    text = note.content,
+                    text = note!!.content,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
 
-
-            Spacer(modifier = Modifier.height(80.dp)) // gives room at bottom
+            Spacer(modifier = Modifier.height(80.dp))
         }
-
     }
-    }
-
+}
 
 fun deleteNote(
     noteId: Long,
@@ -134,9 +112,6 @@ fun deleteNote(
     navController: NavController
 ) {
     val notes = NoteRepository.loadNotes(context)
-    val updatedNotes = notes.filter { it.id != noteId }
-
-    NoteRepository.saveNotes(context, updatedNotes)
-
+    NoteRepository.saveNotes(context, notes.filter { it.id != noteId })
     navController.popBackStack()
 }
