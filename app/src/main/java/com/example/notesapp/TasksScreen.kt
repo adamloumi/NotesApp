@@ -10,6 +10,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -19,11 +21,19 @@ import com.example.notesapp.TaskItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TasksScreen(navController: NavController) {
 
+fun TasksScreen(
+    navController: NavController,
+    tasksViewModel: TasksViewModel = viewModel()
+) {
     val context = LocalContext.current
-    var tasks by remember { mutableStateOf(NoteRepository.loadTasks(context)) }
+    val tasks by tasksViewModel.tasks.collectAsState()
     var newTask by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(context) {
+        tasksViewModel.loadTasks(context)
+    }
 
     Scaffold(
 
@@ -48,10 +58,10 @@ fun TasksScreen(navController: NavController) {
                 Spacer(Modifier.width(8.dp))
                 Button(onClick = {
                     if (newTask.isNotBlank()) {
-                        val updated = tasks + TaskItem(newTask, false)
-                        tasks = updated
-                        NoteRepository.saveTasks(context, updated)
-                        newTask = ""
+                        coroutineScope.launch {
+                            tasksViewModel.addTask(context, TaskItem(newTask, false))
+                            newTask = ""
+                        }
                     }
                 }) {
                     Text("Add")
@@ -71,11 +81,9 @@ fun TasksScreen(navController: NavController) {
                     ) {
                         // Toggle done/undone
                         IconButton(onClick = {
-                            val updated = tasks.map {
-                                if (it == task) it.copy(done = !it.done) else it
+                            coroutineScope.launch {
+                                tasksViewModel.updateTask(context, task.copy(done = !task.done))
                             }
-                            tasks = updated
-                            NoteRepository.saveTasks(context, updated)
                         }) {
                             Icon(
                                 imageVector = if (task.done)
@@ -94,9 +102,9 @@ fun TasksScreen(navController: NavController) {
 
                         // Delete task
                         IconButton(onClick = {
-                            val updated = tasks.filter { it != task }
-                            tasks = updated
-                            NoteRepository.saveTasks(context, updated)
+                            coroutineScope.launch {
+                                tasksViewModel.deleteTask(context, task)
+                            }
                         }) {
                             Icon(
                                 Icons.Filled.Delete,

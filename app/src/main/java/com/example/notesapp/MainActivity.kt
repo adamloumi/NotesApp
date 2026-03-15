@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -39,18 +40,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+
 fun NotesApp(
     navController: NavController,
+    notesViewModel: NotesViewModel = viewModel()
 ) {
     val lang = LocalAppLanguage.current
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    var notes by remember { mutableStateOf(listOf<Note>()) }
+    val notes by notesViewModel.notes.collectAsState()
 
-    // Load notes once
-    LaunchedEffect(Unit) {
-        notes = NoteRepository.loadNotes(context)
+    LaunchedEffect(context) {
+        notesViewModel.loadNotes(context)
     }
 
     val sortedNotes = remember(notes) {
