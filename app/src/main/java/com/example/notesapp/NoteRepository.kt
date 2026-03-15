@@ -17,21 +17,21 @@ object NoteRepository {
     // NOTE FUNCTIONS
     //------------------------------------
 
-    fun loadNotes(context: Context): List<Note> {
-        val file = File(context.filesDir, NOTES_FILE)
-        if (!file.exists()) return emptyList()
-        val json = file.readText()
 
+    suspend fun loadNotes(context: Context): List<Note> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val file = File(context.filesDir, NOTES_FILE)
+        if (!file.exists()) return@withContext emptyList()
+        val json = file.readText()
         val type = object : TypeToken<List<Note>>() {}.type
-        return gson.fromJson(json, type)
+        gson.fromJson(json, type)
     }
 
-    fun saveNotes(context: Context, notes: List<Note>) {
+    suspend fun saveNotes(context: Context, notes: List<Note>) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val json = gson.toJson(notes)
         File(context.filesDir, NOTES_FILE).writeText(json)
     }
 
-    fun saveSingle(context: Context, note: Note) {
+    suspend fun saveSingle(context: Context, note: Note) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val notes = loadNotes(context).toMutableList()
         val index = notes.indexOfFirst { it.id == note.id }
         if (index != -1) {
@@ -44,16 +44,15 @@ object NoteRepository {
     // GLOBAL TASK LIST FUNCTIONS
     //------------------------------------
 
-    fun loadTasks(context: Context): List<TaskItem> {
+    suspend fun loadTasks(context: Context): List<TaskItem> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val file = File(context.filesDir, TASKS_FILE)
-        if (!file.exists()) return emptyList()
+        if (!file.exists()) return@withContext emptyList()
         val json = file.readText()
-
         val type = object : TypeToken<List<TaskItem>>() {}.type
-        return gson.fromJson(json, type)
+        gson.fromJson(json, type)
     }
 
-    fun saveTasks(context: Context, tasks: List<TaskItem>) {
+    suspend fun saveTasks(context: Context, tasks: List<TaskItem>) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val json = gson.toJson(tasks)
         File(context.filesDir, TASKS_FILE).writeText(json)
     }

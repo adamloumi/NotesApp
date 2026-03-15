@@ -3,6 +3,8 @@ package com.example.notesapp
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -20,13 +22,20 @@ import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+
 fun ViewNoteScreen(
     noteId: Long,
-    navController: NavController
+    navController: NavController,
+    noteViewModel: NoteViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    var notes by remember { mutableStateOf(NoteRepository.loadNotes(context)) }
-    var note by remember { mutableStateOf(notes.find { it.id == noteId }) }
+    val notes by noteViewModel.notes.collectAsState()
+    val note = notes.find { it.id == noteId }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(context) {
+        noteViewModel.loadNotes(context)
+    }
 
     if (note == null) {
         LaunchedEffect(Unit) { navController.popBackStack() }
@@ -53,10 +62,9 @@ fun ViewNoteScreen(
                     }
 
                     IconButton(onClick = {
-                        val updated = note!!.copy(pinned = !note!!.pinned)
-                        notes = notes.map { if (it.id == noteId) updated else it }
-                        note = updated
-                        NoteRepository.saveNotes(context, notes)
+                        coroutineScope.launch {
+                            noteViewModel.pinNote(context, note!!.id, !note!!.pinned)
+                        }
                     }) {
                         Icon(
                             imageVector = if (note!!.pinned) Icons.Filled.Star else Icons.Filled.StarBorder,
@@ -65,7 +73,10 @@ fun ViewNoteScreen(
                     }
 
                     IconButton(onClick = {
-                        deleteNote(note!!.id, context, navController)
+                        coroutineScope.launch {
+                            noteViewModel.deleteNote(context, note!!.id)
+                            navController.popBackStack()
+                        }
                     }) {
                         Icon(Icons.Filled.Delete, contentDescription = "Delete")
                     }
@@ -106,12 +117,5 @@ fun ViewNoteScreen(
     }
 }
 
-fun deleteNote(
-    noteId: Long,
-    context: android.content.Context,
-    navController: NavController
-) {
-    val notes = NoteRepository.loadNotes(context)
-    NoteRepository.saveNotes(context, notes.filter { it.id != noteId })
-    navController.popBackStack()
-}
+
+// deleteNote function is now handled by NoteViewModel and coroutine in the composable
