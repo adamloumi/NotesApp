@@ -42,7 +42,7 @@ fun InfoScreen(navController: NavController) {
         ) {
 
             Text(
-                text = "Version 0.5 — Patch Notes",
+                text = "Version 0.75 — Patch Notes",
                 style = MaterialTheme.typography.titleLarge
             )
 
@@ -51,10 +51,8 @@ fun InfoScreen(navController: NavController) {
             Text(
                 text = """
 • Added French/English language toggle
-• Added dark mode toggle
-• Improved keyboard behavior
-• Added note pinning system
-• Added search bar
+• Added token sharing feature
+• Added info button to showcase new features
 • Improved UI animations
 • Fixed white flash on startup
 """.trimIndent(),

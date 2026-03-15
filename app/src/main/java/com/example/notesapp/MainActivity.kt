@@ -23,13 +23,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,34 +43,31 @@ fun NotesApp(
     navController: NavController,
 ) {
     val lang = LocalAppLanguage.current
-
-    data class TaskItem(
-        val text: String,
-        val done: Boolean
-    )
-    val tasks: List<TaskItem> = emptyList()
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
-
     val context = LocalContext.current
     var notes by remember { mutableStateOf(listOf<Note>()) }
 
+    // Load notes once
     LaunchedEffect(Unit) {
         notes = NoteRepository.loadNotes(context)
     }
 
-    val sortedNotes = notes.sortedWith(
-        compareByDescending<Note> { it.pinned }
-            .thenByDescending { it.timestamp }
-    )
+    val sortedNotes = remember(notes) {
+        notes.sortedWith(
+            compareByDescending<Note> { it.pinned }
+                .thenByDescending { it.timestamp }
+        )
+    }
 
-    val filteredNotes = sortedNotes.filter { note ->
-        note.title.contains(searchQuery, ignoreCase = true) ||
-                note.content.contains(searchQuery, ignoreCase = true)
+    val filteredNotes = remember(sortedNotes, searchQuery) {
+        sortedNotes.filter { note ->
+            note.title.contains(searchQuery, ignoreCase = true) ||
+                    note.content.contains(searchQuery, ignoreCase = true)
+        }
     }
 
     var pressed by remember { mutableStateOf(false) }
-
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.85f else 1f,
         animationSpec = tween(durationMillis = 100),
@@ -80,8 +75,6 @@ fun NotesApp(
     )
 
     Scaffold(
-
-
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -98,20 +91,19 @@ fun NotesApp(
             }
         }
     ) { innerPadding ->
-
-        Column(
+        // Use LazyColumn for better performance with large lists
+        LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState())
         ) {
-
-            for (note in filteredNotes) {
+            items(filteredNotes, key = { it.id }) { note ->
                 NoteCard(note, navController)
             }
-
         }
     }
+    // --- AI Integration Placeholder ---
+    // In the future, AI features such as note summarization or smart suggestions can be added here.
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
